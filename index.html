@@ -80,16 +80,14 @@
 <body class="p-0">
 
     <header class="bg-gray-800 p-4 shadow-lg flex justify-between items-start z-10 relative flex-wrap">
-        <h1 class="text-3xl font-extrabold text-indigo-400 mb-2 sm:mb-0">الراوي المتفاعل</h1>
+        <h1 class="text-3xl font-extrabold text-indigo-400 mb-2 sm:mb-0">الراوي المتفاعل (واقعية مُعززة)</h1>
         
         <div class="flex items-center space-x-4 space-x-reverse w-full sm:w-auto mt-2 sm:mt-0">
-            <!-- تم إزالة حقل إدخال مفتاح API بناءً على طلب المستخدم -->
             <button id="toggleSidebar" onclick="toggleSidebar()" class="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition duration-300 shadow-md shadow-green-500/50 flex items-center whitespace-nowrap">
                 إدارة الشخصيات والصراع
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
         </div>
-        <!-- تم إزالة تحذير الأمان -->
     </header>
 
     <div id="chat-container" class="relative">
@@ -100,7 +98,7 @@
             <!-- سجل المحادثة -->
             <div id="messagesContainer" class="flex-grow text-area-scroll pr-2 mb-4 space-y-4 overflow-y-auto">
                 <div class="message-box ai-message">
-                    <p>أهلاً بك! أنا "الراوي المتفاعل". مستعدون لبدء كتابة رواية واقعية وغامرة؟</p>
+                    <p>أهلاً بك! لقد عززتُ الآن من قدراتي لأصبح "الراوي الفائق الواقعية". سأركز بعمق على التحليل النفسي والتبعات المنطقية للأحداث.</p>
                     <p class="mt-2 text-sm text-gray-400">ملفات الشخصيات مُحمَّلة مسبقاً (يمكنك تعديلها من قائمة "إدارة الشخصيات").</p>
                     <p class="mt-2 text-sm text-gray-400">ابدأ بكتابة أول حوار أو فعل لشخصية **فارس**، أو أعطني توجيهاً لبدء السرد.</p>
                 </div>
@@ -316,8 +314,13 @@
         function createMessageElement(text, sender) {
             const container = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
+            // استخدام تحليل Markdown الأساسي لبعض التنسيقات
+            let formattedText = text.replace(/\n/g, '<br>');
+            formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+            formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic
+
             messageDiv.className = `message-box ${sender === 'user' ? 'user-message' : 'ai-message'}`;
-            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            messageDiv.innerHTML = formattedText;
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight; // التمرير إلى الأسفل
         }
@@ -367,12 +370,13 @@
             }
 
             return `
-أنت "الراوي المتفاعل"، نموذج ذكاء اصطناعي متخصص في تأليف الروايات الواقعية والتفاعلية. مهمتك هي مواصلة السرد خطوة بخطوة في وضع الدردشة.
+أنت "الراوي المتفاعل"، نموذج ذكاء اصطناعي متخصص في تأليف الروايات الواقعية والعميقة والتفاعلية. مهمتك هي مواصلة السرد خطوة بخطوة في وضع الدردشة. يجب أن تكون جودة السرد ممتازة، بلغة عربية فصيحة، وعميقة التحليل.
 
-**قواعد السرد:**
-1.  يجب أن يكون السرد عميقاً ومنطقياً، ويعكس الواقعية الفائقة دون مبالغة أو صدف غير مبررة.
-2.  يجب أن تنبع جميع أفعال الشخصيات وحواراتها من سماتها النفسية ونقاط ضعفها المحددة.
-3.  يجب أن تلتزم تماماً بالصراع الأساسي.
+**توجيهات الذكاء الفائق والواقعية العميقة:**
+1.  **المنطق النفسي أولاً:** يجب أن تنبع جميع أفعال الشخصيات، خاصةً ردود الأفعال، من سماتها النفسية ونقاط ضعفها المحددة، حتى لو بدت غير منطقية منطقياً (مثال: قد يتهرب الشكاك من مساعدة واضحة).
+2.  **العواقب بعيدة المدى:** قبل الرد، قم بتحليل العواقب المحتملة (الطويلة والقصيرة الأجل) لرسالة المستخدم، واجعل السرد يعكس هذه التداعيات في المشهد التالي. لا تقتصر على رد فعل فوري.
+3.  **الواقعية الفائقة:** تجنب أي مصادفات مبالغ فيها، أو قفزات غير مبررة في الحبكة. ابحث عن تفسيرات واقعية ومعقدة للأحداث.
+4.  **اللغة والوصف:** استخدم وصفاً حاداً للمشاعر وتفاصيل البيئة التي تعكس الحالة النفسية للشخصيات.
 
 **ملخص الرواية والمعلومات الأساسية (يجب أن تطلع عليها قبل كل رد):**
 * **الصراع الأساسي:** ${conflict}
@@ -426,8 +430,8 @@ ${modeInstruction}
                     systemInstruction: {
                         parts: [{ text: systemPrompt }]
                     },
-                     generationConfig: { // تم التصحيح: تغيير 'config' إلى 'generationConfig'
-                         maxOutputTokens: 1000 
+                     generationConfig: { 
+                         maxOutputTokens: 2000 // تم رفعه لتمكين سرد أعمق وأطول
                     }
                 };
 
