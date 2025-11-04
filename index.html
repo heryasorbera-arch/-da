@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الراوي المتفاعل - محادثة تأليف الروايات</title>
+    <!-- تحميل Tailwind CSS لأفضل تصميم متجاوب -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #121212;
+            color: #E0E0E0;
+            overflow: hidden; 
+        }
+        #chat-container {
+            height: calc(100vh - 4rem); 
+            display: flex;
+        }
+        .chat-area {
+            flex-grow: 1;
+            transition: margin-right 0.3s ease;
+        }
+        .message-box {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .user-message {
+            background-color: #6366f1; /* Indigo-500 */
+            color: white;
+            margin-right: auto;
+            margin-left: 0;
+            border-bottom-right-radius: 5px;
+        }
+        .ai-message {
+            background-color: #1f2937; /* Gray-800 */
+            color: #E0E0E0;
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-left-radius: 5px;
+        }
+        /* Sidebar styles */
+        #sidebar {
+            width: 350px;
+            transform: translateX(350px);
+            transition: transform 0.3s ease-in-out;
+            z-index: 20;
+        }
+        #sidebar.open {
+            transform: translateX(0);
+        }
+        .chat-area-expanded {
+            margin-right: 0 !important;
+        }
+        .chat-area-contracted {
+            margin-right: 350px;
+        }
+        /* Custom scrollbar for aesthetics */
+        .text-area-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #6366f1 #1f2937;
+        }
+        .text-area-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .text-area-scroll::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .text-area-scroll::-webkit-scrollbar-thumb {
+            background-color: #6366f1;
+            border-radius: 20px;
+            border: 2px solid #1f2937;
+        }
+    </style>
+</head>
+<body class="p-0">
+
+    <header class="bg-gray-800 p-4 shadow-lg flex justify-between items-start z-10 relative flex-wrap">
+        <h1 class="text-3xl font-extrabold text-indigo-400 mb-2 sm:mb-0">الراوي المتفاعل</h1>
+        
+        <div class="flex items-center space-x-4 space-x-reverse w-full sm:w-auto mt-2 sm:mt-0">
+            <!-- تم إزالة حقل إدخال مفتاح API بناءً على طلب المستخدم -->
+            <button id="toggleSidebar" onclick="toggleSidebar()" class="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition duration-300 shadow-md shadow-green-500/50 flex items-center whitespace-nowrap">
+                إدارة الشخصيات والصراع
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+        <!-- تم إزالة تحذير الأمان -->
+    </header>
+
+    <div id="chat-container" class="relative">
+        
+        <!-- منطقة المحادثة الرئيسية -->
+        <div id="chatArea" class="chat-area p-6 flex flex-col h-full chat-area-expanded" style="margin-right: 0;">
+            
+            <!-- سجل المحادثة -->
+            <div id="messagesContainer" class="flex-grow text-area-scroll pr-2 mb-4 space-y-4 overflow-y-auto">
+                <div class="message-box ai-message">
+                    <p>أهلاً بك! أنا "الراوي المتفاعل". مستعدون لبدء كتابة رواية واقعية وغامرة؟</p>
+                    <p class="mt-2 text-sm text-gray-400">ملفات الشخصيات مُحمَّلة مسبقاً (يمكنك تعديلها من قائمة "إدارة الشخصيات").</p>
+                    <p class="mt-2 text-sm text-gray-400">ابدأ بكتابة أول حوار أو فعل لشخصية **فارس**، أو أعطني توجيهاً لبدء السرد.</p>
+                </div>
+            </div>
+
+            <!-- مربع إدخال الرسالة وأدوات التحكم -->
+            <div class="flex flex-col space-y-2">
+                
+                <!-- زر تبديل وضع الشخصية -->
+                <button id="characterModeToggle" onclick="toggleCharacterMode()" class="w-full py-2 px-4 text-white font-bold rounded-xl transition duration-300 shadow-lg flex items-center justify-center">
+                    <!-- النص سيتم تحديثه بواسطة JS -->
+                </button>
+
+                <!-- مربع الإدخال والإرسال -->
+                <div class="flex items-center">
+                    <input type="text" id="userInput" onkeypress="handleKeyPress(event)" class="flex-grow p-3 rounded-r-xl rounded-l-none bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-gray-400">
+                    <button onclick="sendMessage()" id="sendButton" class="py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-l-xl rounded-r-none transition duration-300 shadow-lg flex items-center justify-center">
+                        <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        إرسال
+                    </button>
+                </div>
+                <p id="errorMsg" class="text-red-500 text-sm hidden">حدث خطأ. يرجى مراجعة المدخلات أو المحاولة مرة أخرى.</p>
+            </div>
+        </div>
+
+        <!-- القائمة الجانبية لإدارة الشخصيات (الـ Sidebar) -->
+        <div id="sidebar" class="bg-gray-800 p-6 shadow-2xl absolute top-0 right-0 h-full overflow-y-auto z-20 text-area-scroll">
+            <h2 class="text-3xl font-bold mb-6 text-green-300 border-b border-green-600 pb-2 flex justify-between items-center">
+                ملفات الشخصيات
+                <button onclick="toggleSidebar()" class="text-red-400 hover:text-red-500 text-2xl font-extrabold transition">
+                    &times;
+                </button>
+            </h2>
+
+            <!-- 1. ملف تعريف شخصية المستخدم (أنت) -->
+            <div id="userCharacterCard" class="p-4 bg-indigo-900/50 rounded-lg border-2 border-indigo-600 shadow-lg mb-6">
+                <h3 class="text-2xl font-bold mb-3 text-indigo-300">ملف شخصيتك (أنت)</h3>
+                
+                <div class="mb-3">
+                    <label for="user_gender" class="block mb-1 text-sm font-medium text-gray-300">الجنس:</label>
+                    <select id="user_gender" onchange="updateUserCharacterState()" class="w-full p-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:ring-green-500 focus:border-green-500">
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </div>
+                
+                <input type="text" id="user_name" oninput="updateUserCharacterState()" placeholder="اسم شخصيتك (مثال: نورة)" class="w-full p-2 mb-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500">
+                
+                <textarea id="user_physical" oninput="updateUserCharacterState()" rows="1" placeholder="المواصفات الشكلية" class="w-full p-2 mb-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+                
+                <textarea id="user_traits" oninput="updateUserCharacterState()" rows="2" placeholder="السمات النفسية الرئيسية" class="w-full p-2 mb-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+                
+                <textarea id="user_flaw" oninput="updateUserCharacterState()" rows="2" placeholder="نقطة الضعف الأساسية" class="w-full p-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+
+            </div>
+
+            <!-- 2. الصراع الرئيسي -->
+            <div class="mb-6">
+                <label for="coreConflict" class="block mb-2 text-lg font-medium text-gray-300">الصراع الأساسي (Theme):</label>
+                <textarea id="coreConflict" rows="2" class="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:ring-green-500 focus:border-green-500 text-white" placeholder="مثال: رجل أعمال يسعى لتسوية ديون قديمة..."></textarea>
+            </div>
+
+            <!-- 3. قائمة الشخصيات الأخرى -->
+            <h3 class="text-2xl font-semibold mb-4 text-gray-300">الشخصيات الأخرى (الطبيعة ونقاط الضعف)</h3>
+            <div id="charactersList" class="space-y-4 mb-6">
+                <!-- سيتم إضافة الشخصيات هنا ديناميكياً -->
+            </div>
+
+            <button onclick="addCharacter()" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition duration-300 shadow-lg shadow-indigo-500/50">
+                + إضافة شخصية جديدة
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // =======================================================
+        //        1. DECLARATIONS (تم تجميعها لحل مشكلة النطاق)
+        // =======================================================
+
+        // *** السطر الذي يجب أن تضع فيه مفتاح API الخاص بك مباشرةً (إذا لم يتم حقنه تلقائياً) ***
+        const MY_API_KEY = "AIzaSyBwXh_a9Xy-QB7T-ilYt2Kwe-BojepQv74"; // <--- تم إدراج مفتاح API هنا (السطر 111)
+
+        // المتغيرات العالمية المطلوبة من البيئة
+        var __app_id = typeof __app_id !== 'undefined' ? __app_id : 'reality-weaver-app';
+        var __firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        var __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // متغيرات حالة التطبيق
+        let chatHistory = [];
+        let characters = [];
+        let isSidebarOpen = false;
+        let userCharacter = {}; 
+        let isCharacterMode = true; 
+        
+        // دالة للحصول على المفتاح من المتغير الثابت (MY_API_KEY) أو تركه فارغاً
+        function getApiKey() {
+            // يعود بالمفتاح الذي وضعه المستخدم في المتغير الثابت، وإلا فإنه يعتمد على الحقن التلقائي للبيئة
+            return MY_API_KEY; 
+        }
+
+        // =======================================================
+        //                     2. FUNCTIONS
+        // =======================================================
+
+        // دالة لفتح/إغلاق القائمة الجانبية
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const chatArea = document.getElementById('chatArea');
+            isSidebarOpen = !isSidebarOpen;
+            
+            if (isSidebarOpen) {
+                sidebar.classList.add('open');
+                chatArea.classList.remove('chat-area-expanded');
+                chatArea.classList.add('chat-area-contracted');
+            } else {
+                sidebar.classList.remove('open');
+                chatArea.classList.remove('chat-area-contracted');
+                chatArea.classList.add('chat-area-expanded');
+            }
+        }
+        
+        // دالة لتحديث حالة شخصية المستخدم (تُستدعى عند أي تغيير في حقول الشخصية)
+        function updateUserCharacterState() {
+            userCharacter = {
+                gender: document.getElementById('user_gender').value,
+                name: document.getElementById('user_name').value.trim() || 'الشخصية الرئيسية',
+                physical: document.getElementById('user_physical').value.trim(),
+                traits: document.getElementById('user_traits').value.trim(),
+                flaw: document.getElementById('user_flaw').value.trim()
+            };
+            updateChatControls(); // تحديث أزرار المحادثة
+        }
+
+        // دالة لتبديل وضع المحادثة (شخصية/توجيه)
+        function toggleCharacterMode() {
+            isCharacterMode = !isCharacterMode;
+            updateChatControls();
+            document.getElementById('userInput').focus(); // تركيز على مربع الإدخال
+        }
+
+        // دالة لتحديث واجهة التحكم بالمحادثة بناءً على isCharacterMode
+        function updateChatControls() {
+            const toggleButton = document.getElementById('characterModeToggle');
+            const userInput = document.getElementById('userInput');
+            const charName = userCharacter.name || 'الشخصية الرئيسية';
+
+            if (isCharacterMode) {
+                // وضع الشخصية (حوار)
+                toggleButton.classList.remove('bg-red-600', 'hover:bg-red-700');
+                toggleButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                toggleButton.innerText = `التحدث كـ [${charName}] - وضع الحوار مُفعَّل`;
+                userInput.placeholder = `أدخل حوار ${charName} أو فعله...`;
+                toggleButton.title = `اضغط للتبديل إلى وضع توجيه الراوي`;
+            } else {
+                // وضع التوجيه (أوامر للراوي)
+                toggleButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                toggleButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                toggleButton.innerText = `توجيه الراوي - وضع التوجيه مُفعَّل`;
+                userInput.placeholder = `أدخل توجيهاتك (مثال: اجعل سارة تصرخ غضباً)...`;
+                toggleButton.title = `اضغط للتبديل إلى وضع التحدث كشخصية`;
+            }
+        }
+
+        // دالة لإضافة بطاقة شخصية جديدة
+        function addCharacter(id = crypto.randomUUID()) {
+            const list = document.getElementById('charactersList');
+            const newChar = document.createElement('div');
+            newChar.id = `char-${id}`;
+            newChar.className = 'p-4 bg-gray-700 rounded-lg border border-gray-600 shadow-md';
+            newChar.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="text-xl font-semibold text-green-400">شخصية جديدة</h4>
+                    <button onclick="removeCharacter('${id}')" class="text-red-400 hover:text-red-500 transition duration-150">
+                        حذف
+                    </button>
+                </div>
+                <input type="text" data-field="name" value="" placeholder="الاسم (مثال: علي)" class="w-full p-2 mb-2 rounded-md bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500">
+                <textarea data-field="physical" rows="1" placeholder="المواصفات الشكلية" class="w-full p-2 mb-2 rounded-md bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+                <textarea data-field="traits" rows="2" placeholder="السمات النفسية الرئيسية (مثال: انطوائي، شكاك)" class="w-full p-2 mb-2 rounded-md bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+                <textarea data-field="flaw" rows="2" placeholder="نقطة الضعف الأساسية (يجب أن تؤثر في قراراته)" class="w-full p-2 rounded-md bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"></textarea>
+            `;
+            list.appendChild(newChar);
+            updateCharactersState(); // تحديث القائمة بعد الإضافة
+        }
+
+        // دالة لحذف بطاقة شخصية
+        function removeCharacter(id) {
+            const charElement = document.getElementById(`char-${id}`);
+            if (charElement) {
+                charElement.remove();
+                updateCharactersState();
+            }
+        }
+
+        // دالة لتحديث حالة الشخصيات
+        function updateCharactersState() {
+            characters = [];
+            const charDivs = document.querySelectorAll('#charactersList > div');
+            charDivs.forEach(div => {
+                const char = {};
+                div.querySelectorAll('[data-field]').forEach(input => {
+                    const field = input.getAttribute('data-field');
+                    char[field] = input.value.trim();
+                });
+                characters.push(char);
+            });
+        }
+        
+        // دالة مساعدة لإنشاء محتوى رسالة HTML
+        function createMessageElement(text, sender) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-box ${sender === 'user' ? 'user-message' : 'ai-message'}`;
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight; // التمرير إلى الأسفل
+        }
+
+        // دالة لإنشاء برومبت النظام الديناميكي
+        function getSystemInstruction() {
+            // تحديث حالة كل من شخصية المستخدم والشخصيات الأخرى
+            updateUserCharacterState();
+            updateCharactersState();
+            
+            const conflict = document.getElementById('coreConflict').value.trim() || "لا يوجد صراع محدد بعد. انتظر توجيهات المستخدم.";
+            const charName = userCharacter.name || 'الشخصية الرئيسية';
+            let charList = '';
+            let modeInstruction = '';
+
+            // تحديد تعليمات الوضع الحالي
+            if (isCharacterMode) {
+                modeInstruction = `**وضع الحوار:** الرسالة القادمة من المستخدم هي حوار أو فعل صادر من شخصية [${charName}]. يجب عليك الرد إما بسرد يصف رد فعل الشخصيات الأخرى أو بحوار صادر عن شخصية أخرى. يجب أن يكون الرد واقعيًا ومتسقًا مع السمات النفسية والأحداث.`;
+            } else {
+                modeInstruction = `**وضع التوجيه:** الرسالة القادمة من المستخدم هي أمر مباشر للراوي لتوجيه الحبكة. يجب عليك تنفيذ الأمر ومواصلة السرد.`;
+            }
+
+            // 1. ملف تعريف شخصية المستخدم
+            charList += `
+--- ملف الشخصية التي يتحكم بها المستخدم (أنت) ---
+الاسم: ${charName}
+الجنس: ${userCharacter.gender || 'غير محدد'}
+المواصفات الشكلية: ${userCharacter.physical || 'غير محدد'}
+السمات النفسية: ${userCharacter.traits || 'غير محدد'}
+نقطة الضعف الأساسية: ${userCharacter.flaw || 'غير محدد'}
+`;
+
+            // 2. ملفات تعريف الشخصيات الأخرى
+            if (characters.length > 0) {
+                charList += '\n**الشخصيات الأخرى في الرواية:**\n';
+                characters.forEach((char, index) => {
+                    if (char.name) {
+                        charList += `--- شخصية ${char.name || `رقم ${index + 1}`} ---
+المواصفات الشكلية: ${char.physical || 'غير محدد'}
+السمات النفسية: ${char.traits || 'غير محدد'}
+نقطة الضعف الأساسية: ${char.flaw || 'غير محدد'}
+`;
+                    }
+                });
+            } else {
+                 charList += 'لم يتم تحديد شخصيات مساعدة أخرى بعد.\n';
+            }
+
+            return `
+أنت "الراوي المتفاعل"، نموذج ذكاء اصطناعي متخصص في تأليف الروايات الواقعية والتفاعلية. مهمتك هي مواصلة السرد خطوة بخطوة في وضع الدردشة.
+
+**قواعد السرد:**
+1.  يجب أن يكون السرد عميقاً ومنطقياً، ويعكس الواقعية الفائقة دون مبالغة أو صدف غير مبررة.
+2.  يجب أن تنبع جميع أفعال الشخصيات وحواراتها من سماتها النفسية ونقاط ضعفها المحددة.
+3.  يجب أن تلتزم تماماً بالصراع الأساسي.
+
+**ملخص الرواية والمعلومات الأساسية (يجب أن تطلع عليها قبل كل رد):**
+* **الصراع الأساسي:** ${conflict}
+* **ملفات الشخصيات الحالية:**
+${charList}
+
+**تعليمات الوضع الحالي:**
+${modeInstruction}
+
+الآن، واصل السرد أو الرد على توجيهات المستخدم بناءً على الوضع الحالي.
+`;
+        }
+
+
+        // دالة إرسال الرسالة الرئيسية
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const userText = userInput.value.trim();
+            if (!userText) return;
+            
+            const button = document.getElementById('sendButton');
+            const spinner = document.getElementById('spinner');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            errorMsg.classList.add('hidden');
+            const originalUserText = userInput.value;
+            userInput.value = ''; // مسح الإدخال قبل الإرسال
+            
+            // 1. عرض رسالة المستخدم
+            createMessageElement(originalUserText, 'user');
+            
+            // 2. تحديث سجل المحادثة بملف الوضع الحالي
+            const modePrefix = isCharacterMode 
+                ? `[${userCharacter.name || 'الشخصية الرئيسية'} - حوار/فعل]: ` 
+                : "[توجيه للراوي]: ";
+            chatHistory.push({ role: "user", parts: [{ text: modePrefix + originalUserText }] });
+
+            // 3. تفعيل حالة التحميل
+            button.disabled = true;
+            button.classList.add('opacity-50');
+            spinner.classList.remove('hidden');
+
+            const currentApiKey = getApiKey(); // الحصول على المفتاح من المتغير MY_API_KEY
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`;
+
+            try {
+                const systemPrompt = getSystemInstruction();
+                
+                const payload = {
+                    contents: chatHistory,
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                     generationConfig: { // تم التصحيح: تغيير 'config' إلى 'generationConfig'
+                         maxOutputTokens: 1000 
+                    }
+                };
+
+                // محاولة الاتصال مع ميزة الـ Exponential Backoff (5 محاولات)
+                const maxRetries = 5;
+                let attempt = 0;
+                let response;
+
+                while (attempt < maxRetries) {
+                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, delay));
+
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) break;
+
+                    attempt++;
+                    if (attempt === maxRetries) {
+                        // محاولة قراءة الخطأ التفصيلي قبل الإخفاق النهائي
+                        let errorDetail = `Status: ${response.status} ${response.statusText}`;
+                        try {
+                            const errorBody = await response.json();
+                            errorDetail = errorBody.error?.message || errorDetail;
+                        } catch (e) {
+                            // تجاهل خطأ التحليل إذا كان الجسم فارغًا
+                        }
+                        throw new Error(`API request failed after ${maxRetries} attempts. Details: ${errorDetail}`);
+                    }
+                }
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const aiText = candidate.content.parts[0].text;
+                    
+                    // 4. عرض رد الذكاء الاصطناعي
+                    createMessageElement(aiText, 'ai');
+                    
+                    // 5. تحديث سجل المحادثة
+                    chatHistory.push({ role: "model", parts: [{ text: aiText }] });
+                    
+                } else {
+                    // التحقق من رسالة الخطأ الواردة من API
+                    const errorMessage = result.error?.message || "لم يتمكن الراوي من مواصلة السرد. يرجى إعادة المحاولة.";
+                    throw new Error(errorMessage);
+                }
+
+            } catch (error) {
+                console.error("خطأ في المحادثة:", error);
+                errorMsg.innerText = 'عذراً، حدث خطأ أثناء الاتصال بالراوي: ' + (error.message || 'خطأ غير معروف.');
+                errorMsg.classList.remove('hidden');
+                // إزالة رسالة المستخدم الأخيرة من السجل في حالة الفشل
+                chatHistory.pop(); 
+            } finally {
+                // 6. تعطيل حالة التحميل
+                button.disabled = false;
+                button.classList.remove('opacity-50');
+                spinner.classList.add('hidden');
+                userInput.focus();
+            }
+        }
+        
+        // دالة لمعالجة ضغطة Enter
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // إعداد افتراضي عند التحميل
+        window.onload = function() {
+             // إعداد قيم افتراضية لشخصية المستخدم
+            document.getElementById('user_name').value = 'فارس';
+            document.getElementById('user_physical').value = 'هادئ المظهر، شعر أشيب قليلاً، عيناه دائماً تبحث عن التفاصيل.';
+            document.getElementById('user_traits').value = 'انطوائي جداً، محب للكمال، منطقي.';
+            document.getElementById('user_flaw').value = 'العجز عن اتخاذ قرارات حاسمة خوفاً من عواقبها السلبية.';
+            document.getElementById('user_gender').value = 'ذكر';
+            updateUserCharacterState(); // تحديث حالة شخصية المستخدم وواجهة التحكم
+
+            // إعداد شخصية مساعدة افتراضية
+            addCharacter(); 
+            // تحديث بيانات الشخصية الافتراضية
+            const defaultCharDiv = document.querySelector('#charactersList > div');
+            if(defaultCharDiv) {
+                defaultCharDiv.querySelector('[data-field="name"]').value = 'سارة';
+                defaultCharDiv.querySelector('[data-field="physical"]').value = 'امرأة في الثلاثينات، عصبية، دائمة الحركة.';
+                defaultCharDiv.querySelector('[data-field="traits"]').value = 'اندفاعية، عملية، عاطفية تجاه العائلة.';
+                defaultCharDiv.querySelector('[data-field="flaw"]').value = 'تغلب العاطفة على المنطق في أصعب المواقف، مما يقودها لاتخاذ قرارات خاطئة.';
+            }
+            
+            // إعداد الصراع الافتراضي
+            document.getElementById('coreConflict').value = 'قرار مفاجئ ببيع منزل العائلة القديم يهدد بكشف سر قديم أخفاه فارس طوال حياته عن زوجته وأخته سارة.';
+            
+            // تحديث الحالة الأولية للشخصيات الأخرى
+            updateCharactersState();
+            
+            // تحديث أزرار المحادثة (لضمان ظهور الإعدادات الافتراضية)
+            updateChatControls();
+        };
+    </script>
+</body>
+</html>
