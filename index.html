@@ -98,8 +98,8 @@
             <!-- سجل المحادثة -->
             <div id="messagesContainer" class="flex-grow text-area-scroll pr-2 mb-4 space-y-4 overflow-y-auto">
                 <div class="message-box ai-message">
-                    <p>أهلاً بك مجدداً. تم تحديث الراوي ليلتزم تماماً بمخاطبتك بصيغة **(أنت/أنتِ)** في بداية كل رد، مع التزام كامل بالواقعية والذكاء في السرد.</p>
-                    <p class="mt-2 text-sm text-gray-400">ملفات الشخصيات مُحمَّلة مسبقاً (يمكنك تعديلها من قائمة "إدارة الشخصيات").</p>
+                    <p>أهلاً بك. تم تحديث الواجهة. يرجى فتح قائمة "إدارة الشخصيات" وإدخال مفتاح API الخاص بك في الحقل المخصص.</p>
+                    <p class="mt-2 text-sm text-gray-400">ملفات الشخصيات مُحمَّلة مسبقاً.</p>
                     <p class="mt-2 text-sm text-gray-400">ابدأ بكتابة أول حوار أو فعل لشخصية **فارس**، أو أعطني توجيهاً لبدء السرد.</p>
                 </div>
             </div>
@@ -135,6 +135,16 @@
                     &times;
                 </button>
             </h2>
+            
+            <!-- 0. إعداد مفتاح API الجديد -->
+            <div id="apiKeyCard" class="p-4 bg-red-900/50 rounded-lg border-2 border-red-600 shadow-lg mb-6">
+                <h3 class="text-xl font-bold mb-3 text-red-300">إعداد مفتاح Gemini API</h3>
+                <p class="text-sm mb-2 text-gray-300">لحماية المفتاح، أدخله هنا واضغط حفظ. لن يتم تضمينه في الكود المصدري.</p>
+                <input type="text" id="apiKeyInput" placeholder="الصق مفتاح API الخاص بك هنا (AIza...)" class="w-full p-2 mb-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:ring-red-500 focus:border-red-500">
+                <button onclick="saveApiKey()" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition duration-300 shadow-md">
+                    حفظ المفتاح واستخدامه
+                </button>
+            </div>
 
             <!-- 1. ملف تعريف شخصية المستخدم (أنت) -->
             <div id="userCharacterCard" class="p-4 bg-indigo-900/50 rounded-lg border-2 border-indigo-600 shadow-lg mb-6">
@@ -181,8 +191,11 @@
         //        1. DECLARATIONS (تم تجميعها لحل مشكلة النطاق)
         // =======================================================
 
-        // *** السطر الذي يجب أن تضع فيه مفتاح API الخاص بك مباشرةً (إذا لم يتم حقنه تلقائياً) ***
-        const MY_API_KEY = "AIzaSyCag21kbVb7w1IEC5lVqxJP5rmBW2lvqQc"; // <--- تم إدراج مفتاح API هنا
+        // *** تم تفريغ المفتاح لحل مشكلة 'leaked key' والسماح بالحقن التلقائي ***
+        let MY_API_KEY = ""; // الآن هو متغير 'let' ويتم تحميل قيمته من localStorage
+
+        // مفتاح localStorage لحفظ المفتاح
+        const API_KEY_STORAGE_KEY = 'geminiApiKey';
 
         // المتغيرات العالمية المطلوبة من البيئة
         var __app_id = typeof __app_id !== 'undefined' ? __app_id : 'reality-weaver-app';
@@ -198,12 +211,58 @@
         
         // دالة للحصول على المفتاح من المتغير الثابت (MY_API_KEY) أو تركه فارغاً
         function getApiKey() {
-            // يعود بالمفتاح الذي وضعه المستخدم في المتغير الثابت، وإلا فإنه يعتمد على الحقن التلقائي للبيئة
+            // الأولوية للمفتاح الذي أدخله المستخدم، وإلا يتم الاعتماد على الحقن التلقائي للبيئة
             return MY_API_KEY; 
         }
 
         // =======================================================
-        //                     2. FUNCTIONS
+        //         2. API Key Management (إدارة المفتاح)
+        // =======================================================
+
+        // حفظ المفتاح من حقل الإدخال إلى localStorage
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            const key = input.value.trim();
+            if (key) {
+                MY_API_KEY = key;
+                localStorage.setItem(API_KEY_STORAGE_KEY, key);
+                alertUser('تم حفظ المفتاح بنجاح! يمكنك الآن بدء المحادثة.', 'success');
+                // إغلاق القائمة الجانبية بعد الحفظ
+                if (isSidebarOpen) toggleSidebar(); 
+            } else {
+                alertUser('يرجى إدخال مفتاح API صحيح.', 'error');
+            }
+        }
+        
+        // تحميل المفتاح من localStorage عند بدء التشغيل
+        function loadApiKey() {
+            const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            const input = document.getElementById('apiKeyInput');
+            if (storedKey) {
+                MY_API_KEY = storedKey;
+                input.value = storedKey;
+            }
+        }
+        
+        // دالة لعرض رسائل للمستخدم (بديل لـ alert)
+        function alertUser(message, type) {
+            const card = document.getElementById('apiKeyCard');
+            // إنشاء عنصر رسالة مؤقت
+            let alertDiv = document.createElement('div');
+            alertDiv.className = `p-2 my-2 text-sm font-medium rounded-lg ${type === 'success' ? 'bg-green-700 text-green-100' : 'bg-red-700 text-red-100'}`;
+            alertDiv.innerText = message;
+            
+            // إضافة الرسالة
+            card.appendChild(alertDiv);
+            
+            // إزالة الرسالة بعد 3 ثوانٍ
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+
+        // =======================================================
+        //                     3. FUNCTIONS
         // =======================================================
 
         // دالة لفتح/إغلاق القائمة الجانبية
@@ -396,6 +455,16 @@ ${modeInstruction}
             const userInput = document.getElementById('userInput');
             const userText = userInput.value.trim();
             if (!userText) return;
+
+            const currentApiKey = getApiKey();
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`;
+
+            // التحقق من المفتاح قبل الإرسال
+            if (!currentApiKey && typeof __initial_auth_token === 'undefined') {
+                document.getElementById('errorMsg').innerText = 'يرجى إدخال مفتاح API الخاص بك في القائمة الجانبية أو التأكد من توفره.';
+                document.getElementById('errorMsg').classList.remove('hidden');
+                return;
+            }
             
             const button = document.getElementById('sendButton');
             const spinner = document.getElementById('spinner');
@@ -419,9 +488,6 @@ ${modeInstruction}
             button.classList.add('opacity-50');
             spinner.classList.remove('hidden');
 
-            const currentApiKey = getApiKey(); // الحصول على المفتاح من المتغير MY_API_KEY
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`;
-
             try {
                 const systemPrompt = getSystemInstruction();
                 
@@ -431,7 +497,7 @@ ${modeInstruction}
                         parts: [{ text: systemPrompt }]
                     },
                      generationConfig: { 
-                         maxOutputTokens: 2000 // تم رفعه لتمكين سرد أعمق وأطول
+                         maxOutputTokens: 2000 
                     }
                 };
 
@@ -442,7 +508,10 @@ ${modeInstruction}
 
                 while (attempt < maxRetries) {
                     const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, delay));
+                    // لا تسجل الأخطاء في المحاولة إذا كانت بسبب backoff 
+                    if (attempt > 0) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
 
                     response = await fetch(apiUrl, {
                         method: 'POST',
@@ -508,6 +577,9 @@ ${modeInstruction}
 
         // إعداد افتراضي عند التحميل
         window.onload = function() {
+            // تحميل المفتاح المحفوظ أولاً
+            loadApiKey();
+
              // إعداد قيم افتراضية لشخصية المستخدم
             document.getElementById('user_name').value = 'فارس';
             document.getElementById('user_physical').value = 'هادئ المظهر، شعر أشيب قليلاً، عيناه دائماً تبحث عن التفاصيل.';
@@ -539,4 +611,3 @@ ${modeInstruction}
     </script>
 </body>
 </html>
-
